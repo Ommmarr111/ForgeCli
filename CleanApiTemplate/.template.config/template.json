@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Omar",
+  "classifications": [ "WebAPI", "CleanArchitecture" ],
+  "identity": "Omar.CleanArchitecture.Api",
+  "name": "Clean Architecture Web API",
+  "shortName": "clean-api",
+  "sourceName": "CleanApiTemplate",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}
