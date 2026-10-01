@@ -1,163 +1,141 @@
-# Forge CLI
+# 🛠️ Forge CLI
 
-[![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=flat-square&logo=dotnet)
+![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)
 
 Scaffold Clean Architecture ASP.NET Core Web APIs from the terminal.
 
-Forge generates the solution, the layered projects, and the per-entity boilerplate (entity, EF Core configuration, DTO, service interface, controller) so you can start on business logic immediately.
+Forge creates a layered solution from the `clean-api` template, then generates per-entity starter files (Entity, EF Core configuration, DTOs, Service interface, Controller) inside it.
 
-<!-- TODO: add a terminal GIF here (e.g. recorded with VHS or asciinema). A 10-second demo of `forge` -> Add New Entity -> Subscription does more than any paragraph. -->
+<!-- TODO: add a short terminal GIF (VHS or asciinema) of: forge -> Add New Entity -> Subscription -->
 
-## Contents
+## 📋 Requirements
 
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Quick start](#quick-start)
-- [What gets generated](#what-gets-generated)
-- [Architecture](#architecture)
-- [Scope and limitations](#scope-and-limitations)
-- [Contributing](#contributing)
-- [License](#license)
+* **.NET 9 SDK**
+* The `clean-api` template. This is required for *Option 1 (Create New Web API Solution)*. 
+  To install it from this repository, run:
+  ```bash
+  dotnet new install ./CleanApiTemplate
+  ```
 
-## Requirements
-
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-
-## Installation
-
-Forge is currently installed from source.
+## 📦 Installation
 
 ```bash
-git clone https://github.com/Ommmarr111/Forge-CLI.git
-cd Forge-CLI
+git clone [https://github.com/Ommmarr111/ForgeCli.git](https://github.com/Ommmarr111/ForgeCli.git)
+cd ForgeCli
+
+# Pack the tool into a NuGet package
 dotnet pack -c Release
+
+# Install globally from the local output directory
 dotnet tool install --global --add-source ./nupkg ForgeCli
 ```
 
-Verify:
-
-```bash
-forge
-```
-
-Update or uninstall:
-
+**Update or uninstall:**
 ```bash
 dotnet tool update --global --add-source ./nupkg ForgeCli
 dotnet tool uninstall --global ForgeCli
 ```
 
-## Quick start
+## 💻 Usage
 
-### Create a solution
-
-Run `forge` and choose **Create New Web API Solution**, then enter a name:
+Run `forge` from your terminal:
 
 ```text
-? Solution name: GymManagement
+What do you want to do?
+> 1. Create New Web API Solution
+  2. Add New Entity (Scaffold)
+  3. Exit
 ```
 
-Result:
+### 1. Create a Solution
+Run this in an empty directory. Enter a solution name (for example, `GymManagement`). Forge will run `dotnet new clean-api -n GymManagement` behind the scenes.
 
-```text
-GymManagement/
-├── GymManagement.Domain/
-├── GymManagement.Application/
-├── GymManagement.Infrastructure/
-├── GymManagement.Api/
-└── GymManagement.sln
-```
-
-### Add an entity
-
-From the solution root:
-
+### 2. Add an Entity
+Run this from the solution root (the folder containing the `.sln` or `.slnx` file):
 ```bash
 cd GymManagement
 forge
 ```
+Choose **Add New Entity (Scaffold)**, enter a singular entity name in PascalCase (for example, `Subscription`), and select the components to generate. Namespaces are automatically extracted from the solution file name, and files are written under the `src/` directory.
 
-Choose **Add New Entity (Scaffold)**, enter a name, and select the components you want:
+## 🏗️ What Gets Generated
 
-```text
-? Entity name: Subscription
-? Select components:
- ◉ Domain Entity
- ◉ EF Core Configuration
- ◉ DTO
- ◉ Service Interface
- ◉ API Controller
-```
+For the entity `Subscription` in the solution `GymManagement`:
 
-Forge reads your existing solution name and applies the matching namespaces.
+| Component | Output Path |
+| :--- | :--- |
+| **Domain Entity** | `src/GymManagement.Domain/Entities/Subscription.cs` |
+| **EF Core Configuration** | `src/GymManagement.Infrastructure/Persistence/Configurations/SubscriptionConfiguration.cs` |
+| **DTOs & Service Interface** | `src/GymManagement.Application/DTOs/Subscriptions/SubscriptionDtos.cs` <br> `src/GymManagement.Application/Interfaces/ISubscriptionService.cs` |
+| **API Controller** | `src/GymManagement.Api/Controllers/SubscriptionsController.cs` |
 
-## What gets generated
-
-| Component | Project | Output |
-| --- | --- | --- |
-| Domain Entity | `*.Domain` | `Entities/Subscription.cs` |
-| EF Core Configuration | `*.Infrastructure` | `Configurations/SubscriptionConfiguration.cs` (`IEntityTypeConfiguration<T>`) |
-| DTO | `*.Application` | `DTOs/SubscriptionDto.cs` (record) |
-| Service Interface | `*.Application` | `Interfaces/ISubscriptionService.cs` |
-| API Controller | `*.Api` | `Controllers/SubscriptionsController.cs` |
-
-Each component is optional.
-
-### Example output
-
-<!-- TODO: replace with the REAL generated code. Readers want to see exactly what they get. -->
+### ✨ Example Output
 
 ```csharp
-// GymManagement.Domain/Entities/Subscription.cs
+// Domain/Entities/Subscription.cs
 namespace GymManagement.Domain.Entities;
 
 public class Subscription
 {
-    // paste actual generated output here
+    public int Id { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 ```
 
-## Architecture
+```csharp
+// Application/Interfaces/ISubscriptionService.cs
+using GymManagement.Application.DTOs.Subscriptions;
 
-```mermaid
-flowchart TD
-    Api --> Application
-    Api --> Infrastructure
-    Infrastructure --> Application
-    Application --> Domain
-    Infrastructure --> Domain
+namespace GymManagement.Application.Interfaces;
+
+public interface ISubscriptionService
+{
+    Task<IEnumerable<SubscriptionDto>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<SubscriptionDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+}
 ```
 
-<!-- TODO: verify these arrows against the .csproj references Forge actually generates. -->
+```csharp
+// Api/Controllers/SubscriptionsController.cs
+using Microsoft.AspNetCore.Mvc;
+
+namespace GymManagement.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class SubscriptionsController : ControllerBase
+{
+    [HttpGet]
+    public IActionResult GetAll() => Ok();
+}
+```
+*(The EF configuration automatically sets the primary key on `Id`. The DTO file contains `SubscriptionDto(int Id, DateTime CreatedAt)` and an empty `CreateSubscriptionDto`.)*
+
+## 🏛️ Layers
 
 | Layer | Responsibility |
-| --- | --- |
-| Domain | Entities and core business models |
-| Application | DTOs and service abstractions |
-| Infrastructure | EF Core persistence configuration |
-| Api | HTTP endpoints and controllers |
+| :--- | :--- |
+| **Domain** | Entities and core business models |
+| **Application** | DTOs, interfaces, and service abstractions |
+| **Infrastructure** | EF Core persistence configurations and external services |
+| **Api** | HTTP endpoints and controllers |
 
-## Scope and limitations
+<!-- TODO: add a dependency diagram after checking the project references in the clean-api template. -->
 
-Forge generates structure, not behavior. It does not write:
+## ⚠️ Scope and Limitations
 
-- Business rules, validation, or authorization
-- Entity relationships
-- Service implementations
+Forge safely writes starter files (skipping existing files to prevent overwriting your work). It uses smart English pluralization (e.g., `Category` becomes `Categories`). 
 
-<!-- TODO: state explicitly whether Forge registers services in DI, adds DbSet<T> to your DbContext, or creates migrations. If it doesn't, say so here. -->
+However, it **does not** currently:
+- Add a `DbSet<T>` to your `DbContext` or create EF migrations.
+- Register configurations or services in the Dependency Injection container (`Program.cs` / `DependencyInjection.cs`).
+- Implement the service interface or connect the controller to it.
 
-The CLI is currently interactive only.
+*The CLI is currently interactive only.*
 
-## Contributing
+## 🤝 Contributing
+Issues and pull requests are welcome! If you want to help add auto-registration capabilities, feel free to contribute.
 
-Issues and pull requests are welcome. Before opening a PR, please:
-
-1. Follow the existing project structure and generated-code conventions.
-2. Add tests where applicable.
-3. Keep the CLI experience consistent.
-
-## License
-
-Released under the [MIT License](LICENSE).
+## 📄 License
+MIT. See `LICENSE` for details.
